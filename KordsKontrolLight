@@ -1,0 +1,1426 @@
+/*
+<metadata description="KordsKontrol Light"
+          details="Version: 1.0 - KordsKontrol.com - Copyright © KORDSKONTROL 2012 – 2020 – All rights reserved"
+          target="Lightpad"
+          tags="MIDI;Controller"
+          >
+          
+    <groups>
+        <group name="param"    displayName="Chords" />    
+        <group name="setup"    displayName="MIDI" />
+        <group name="messages"    displayName="Messages" />
+        <group name="colors"    displayName="Colors" />
+
+    </groups>
+    
+	<variables>
+	
+	    <variable group="param"      name="Transpose"        displayName="Octave"              type="int"   min="-1" max="1"  value="0" displayMode="slider" tooltip="Transpose 1 octave below or above"  />
+		<variable group="param"      name="Root"             displayName="Key"   type="option"                  value="C"     displayMode="multiline"   options="C;C#;D;D#;E;F;F#;G;G#;A;A#;B;" tooltip="Root Key to use with KordsKontrol Light"/>
+		<variable group="param"      name="Scale"            displayName="Scale" type="option"                  value="Major" displayMode="multiline"   options="Natural Major / Ionien;Dorien;Phrygien;Lydien;Mixolydien;Natural Minor / Eolien;Locrien;Harmonic Minor;Augmented Major;Major Phrygien;Melodic Minor;Bartok;Harmonic Major;Minor Lydien;"	 tooltip="Scale to use with KordsKontrol Light"/>			
+	
+	    <variable group="setup"      name="Midi_Channel1"    displayName="MIDI Channel Bass"   type="int"   min="1" max="16"  value="1" displayMode="stepper" tooltip="MIDI Channel for the Bass note" />
+		<variable group="setup"      name="Midi_Channel2"    displayName="MIDI Channel Tenor"  type="int"   min="1" max="16"  value="1" displayMode="stepper" tooltip="MIDI Channel for the Tenor note"  />
+		<variable group="setup"      name="Midi_Channel3"    displayName="MIDI Channel Alto"   type="int"   min="1" max="16"  value="1" displayMode="stepper" tooltip="MIDI Channel for the Alto note" />
+		<variable group="setup"      name="Midi_Channel4"    displayName="MIDI Channel Soprano"type="int"   min="1" max="16"  value="1" displayMode="stepper" tooltip="MIDI Channel for the Soprano note" />
+		<variable group="setup"      name="FixedVelocity"    displayName="Fixed Velocity"      type="bool"                    value="false"  tooltip="Do not take into account the Velocity played onto the Pad"/>
+		
+		<variable group="messages"      name="Xout"             displayName="X Pressure Message"   type="option"                  value="CC1"     displayMode="multiline"   options="ModWheel;Channel Pressure;CC1;CC2;CC3" tooltip="MIDI message sent on X move while playing a chords"/>
+		<variable group="messages"      name="blockX"            displayName="Block X"      type="bool"                    value="false"  tooltip="Tick this box to map others parameters"/>
+		<variable group="messages"      name="Yout"             displayName="Y Pressure Message"   type="option"                  value="CC2"     displayMode="multiline"   options="ModWheel;Channel Pressure;CC1;CC2;CC3" tooltip="MIDI message sent on Y move while playing a chords"/>
+		<variable group="messages"      name="blockY"            displayName="Block Y"      type="bool"                    value="false"  tooltip="Tick this box to map others parameters"/>
+		<variable group="messages"      name="Zout"             displayName="Z Pressure Message"   type="option"                  value="CC3"     displayMode="multiline"   options="ModWheel;Channel Pressure;CC1;CC2;CC3" tooltip="MIDI message sent on Z move while playing a chords"/>
+	    <variable group="messages"      name="blockZ"            displayName="Block Z"      type="bool"                    value="false"  tooltip="Tick this box to map others parameters"/>
+		<variable group="messages"      name="CC1"              displayName="CC1" type="int"    min="0" max="127"  value="12" displayMode="stepper" tooltip="Value of CC1" />
+		<variable group="messages"      name="CC2"              displayName="CC2" type="int"    min="0" max="127"  value="13" displayMode="stepper" tooltip="Value of CC2" />
+		<variable group="messages"      name="CC3"              displayName="CC3" type="int"    min="0" max="127"  value="14" displayMode="stepper" tooltip="Value of CC3" />
+		
+		
+		<variable group="colors"     name="nColor"           displayName="Notes" type="colour" value="0x3D0D3D" tooltip="Color for the Chords degree Pads" />
+		<variable group="colors"     name="nColorPressed"    displayName="Notes Pressed" type="colour" value="0x986698" tooltip="Color for the pressed Chords degree Pads" />
+		<variable group="colors"     name="nButton1"         displayName="Modifiers 1" type="colour" value="0x67117a" tooltip="Color for the Chords modifiers Pads"/>
+		<variable group="colors"     name="nButton1Pressed"  displayName="Modifiers 1 Pressed" type="colour" value="0xad73ba" tooltip="Color for the pressed Chords modifiers Pads"/>
+		<variable group="colors"     name="nButton2"         displayName="Modifiers 2" type="colour" value="0x392B39" tooltip="Color for the Chords modifiers Pads"/>
+		<variable group="colors"     name="nButton2Pressed"  displayName="Modifiers 2 Pressed" type="colour" value="0x876987" tooltip="Color for the pressed Chords modifiers Pads" />
+		<variable group="colors"     name="rButton"          displayName="Inversions" type="colour" value="0x17053E" tooltip="Color for the Chords Inverion Pads" />
+		<variable group="colors"     name="rButtonPressed"   displayName="Inversions Pressed" type="colour" value="0x695790" tooltip="Color for the pressed Chords inversion Pads"/>
+	</variables>
+	
+	
+
+	
+	
+</metadata>
+*/
+
+
+bool found;
+
+bool notePressed;
+
+bool buttonCol1Pressed;
+bool buttonCol2Pressed;
+bool buttonCol3Pressed;
+bool button0Pressed;
+bool button3Pressed;
+bool button1Pressed;
+bool button4Pressed;
+
+bool rbutton1Pressed;
+bool rbutton2Pressed;
+
+
+int scale[7];
+int root;
+int degree;
+
+int octave;
+
+
+int note[4];
+int t[4];
+int tr[3];
+int bestNote[4];
+int Pnote[4];
+
+int g1,g2,g3;
+
+
+bool overlap;
+bool leadOutLimit;
+bool parallel;
+bool similar;
+
+
+
+int bestScore;
+int currentScore;
+int bestGap;
+
+int valX;
+int lastvalX;
+
+
+int valY;
+int lastvalY;
+
+int valZ;
+int lastvalZ;
+
+
+int mod2;
+int mod3;
+int mod4;
+
+int renv;
+
+int noteX[7];
+int noteY[7];
+
+
+
+int noteColor[7];
+
+
+
+int buttonX[6];
+int buttonY[6];
+
+
+int buttonColor[6];
+
+
+int rbuttonX[2];
+int rbuttonY[2];
+
+
+int rbuttonColor[2];
+
+
+bool pressIndexOn[16];
+int pressIndexType[16];
+int pressIndexNumber[16];
+
+
+float hitX;
+float hitY;
+
+
+int vel;
+bool firstChord;
+
+bool needFourth;
+
+
+const int wNote=3;
+const int hNote=3;
+
+const int nbNote=7;
+
+const int wButton=5;
+const int hButton=3;
+
+const int nbButton=6;
+
+const int wrButton=7;
+const int hrButton=3;
+
+const int nbrButton=2;
+
+const float padLowX = 0.07;
+const float padHighX = 1.93;
+const float padLowY = 0.07;
+const float padHighY = 1.93;
+
+
+
+
+void initialise()
+{   
+ 
+
+    
+noteX[0]=0; noteY[0]=12; 
+noteX[2]=4; noteY[2] =12;
+noteX[4]=8; noteY[4]=12;
+noteX[6]=12; noteY[6]=12;
+
+noteX[1]=2; noteY[1]=9;
+noteX[3]=6; noteY[3] =9;
+noteX[5]=10; noteY[5]=9;
+
+
+for (int i=0; i<nbNote; i++){
+
+    noteColor[i]=nColor;  
+
+      
+}
+
+
+buttonX[0]=0; buttonY[0]=3;
+buttonX[1]=0; buttonY[1]=6;
+buttonX[2]=5; buttonY[2]=3;
+buttonX[3]=5; buttonY[3]=6;
+buttonX[4]=10; buttonY[4]=3;
+buttonX[5]=10; buttonY[5]=6;
+
+
+     for (int j=0; j<nbButton; j++){
+       if (j == 0 || j== 3 || j==4) {
+        
+       buttonColor[j]=nButton1;
+
+       }
+         
+       if (j == 1 || j== 2 || j==5) {
+       buttonColor[j]=nButton2;
+
+       }
+         
+    }
+    
+    
+rbuttonX[0]=0; rbuttonY[0]=0;
+rbuttonX[1]=8; rbuttonY[1]=0; 
+    
+
+
+     for (int k=0; k<nbrButton; k++){
+       
+        
+       rbuttonColor[k]=rButton;
+      
+         
+    }
+
+    
+    
+
+     for (int k=0; k<16; k++){
+         pressIndexOn[k]=false;
+     }
+    
+     notePressed = false;
+     buttonCol1Pressed = false;
+     buttonCol2Pressed = false;
+     buttonCol3Pressed = false;
+     
+     button0Pressed = false;
+     button3Pressed = false;
+     button1Pressed = false;
+     button4Pressed = false;
+     
+     rbutton1Pressed=false;
+     rbutton2Pressed=false;
+     
+     
+    root=60+Root;
+    
+    //Major modes
+    if (Scale == 0){      scale[0]=0;     scale[1]=2;     scale[2]=4;     scale[3]=5;     scale[4]=7;     scale[5]=9;     scale[6]=11; }//Natural Major / Ionien
+    else if (Scale == 1){ scale[0]=0;     scale[1]=2;     scale[2]=3;     scale[3]=5;     scale[4]=7;     scale[5]=9;     scale[6]=10; }//Dorien
+    else if (Scale == 2){scale[0]=0;     scale[1]=1;     scale[2]=3;     scale[3]=5;     scale[4]=7;     scale[5]=8;     scale[6]=10; } //Phrygien
+	else if (Scale == 3) {scale[0]=0;     scale[1]=2;     scale[2]=4;     scale[3]=6;     scale[4]=7;     scale[5]=9;     scale[6]=11; }//Lydien 
+	else if (Scale == 4) {scale[0]=0;     scale[1]=2;     scale[2]=4;     scale[3]=5;     scale[4]=7;     scale[5]=9;     scale[6]=10; }//Mixolydien 
+	else if (Scale == 5)  {scale[0]=0;     scale[1]=2;     scale[2]=3;     scale[3]=5;     scale[4]=7;     scale[5]=8;     scale[6]=10; }//Natural Minor / Eolien
+	else if (Scale == 6)  {scale[0]=0;     scale[1]=1;     scale[2]=3;     scale[3]=5;     scale[4]=6;     scale[5]=8;     scale[6]=10; }// Locrien
+	
+	//Harmonic minor
+	else if (Scale == 7)   {scale[0]=0;     scale[1]=2;     scale[2]=3;     scale[3]=5;     scale[4]=7;     scale[5]=8;     scale[6]=11; }//Harmonic Minor 
+	//else if (Scale == 8)  {scale[0]=0;     scale[1]=1;     scale[2]=3;     scale[3]=5;     scale[4]=6;     scale[5]=9;     scale[6]=10; } //Locrien Natural6 
+	else if (Scale == 8)  {scale[0]=0;     scale[1]=2;     scale[2]=4;     scale[3]=5;     scale[4]=8;     scale[5]=9;     scale[6]=11; } //Augmented Major 
+	//else if (Scale == 10)  {scale[0]=0;     scale[1]=2;     scale[2]=3;     scale[3]=6;     scale[4]=7;     scale[5]=9;     scale[6]=10; }//Dorien #4 
+	else if (Scale == 9) {scale[0]=0;     scale[1]=1;     scale[2]=4;     scale[3]=5;     scale[4]=7;     scale[5]=8;     scale[6]=10; } //Major Phrygien 
+	//else if (Scale == 12) {scale[0]=0;     scale[1]=3;     scale[2]=4;     scale[3]=6;     scale[4]=7;     scale[5]=9;     scale[6]=11; } //Lydien #2 
+	//else if (Scale == 13)  {scale[0]=0;     scale[1]=1;     scale[2]=3;     scale[3]=4;     scale[4]=6;     scale[5]=8;     scale[6]=9; }  //Diminished Superlocrien 
+	//Melodic minor
+	
+	
+	
+	else if (Scale == 10)  {scale[0]=0;     scale[1]=2;     scale[2]=3;     scale[3]=5;     scale[4]=7;     scale[5]=9;     scale[6]=11; }//Melodic Minor 
+	//else if (Scale == 15)  {scale[0]=0;     scale[1]=1;     scale[2]=3;     scale[3]=5;     scale[4]=7;     scale[5]=9;     scale[6]=10; }//Dorien b2
+	//else if (Scale == 16)  {scale[0]=0;     scale[1]=2;     scale[2]=4;     scale[3]=6;     scale[4]=8;     scale[5]=9;     scale[6]=11; }//Augmented Lydien 
+	else if (Scale == 11)  {scale[0]=0;     scale[1]=2;     scale[2]=4;     scale[3]=6;     scale[4]=7;     scale[5]=9;     scale[6]=10; }//Bartok 
+	//else if (Scale == 18)  {scale[0]=0;     scale[1]=2;     scale[2]=4;     scale[3]=5;     scale[4]=7;     scale[5]=8;     scale[6]=10; }//Mixolydien b6 
+	//else if (Scale == 19)  {scale[0]=0;     scale[1]=2;     scale[2]=3;     scale[3]=5;     scale[4]=6;     scale[5]=8;     scale[6]=10; }//Locrien natural2
+	//else if (Scale == 20)  {scale[0]=0;     scale[1]=1;     scale[2]=3;     scale[3]=4;     scale[4]=6;     scale[5]=8;     scale[6]=10; }//Superlocrien 
+	//Harmonic Major
+    
+	
+	else if (Scale == 12)  {scale[0]=0;     scale[1]=2;     scale[2]=4;     scale[3]=5;     scale[4]=7;     scale[5]=8;     scale[6]=11; }//Harmonic major
+	//else if (Scale == 22)  {scale[0]=0;     scale[1]=2;     scale[2]=3;     scale[3]=5;     scale[4]=6;     scale[5]=9;     scale[6]=10; }//Dorien b5
+	//else if (Scale == 23)  {scale[0]=0;     scale[1]=1;     scale[2]=3;     scale[3]=4;     scale[4]=7;     scale[5]=8;     scale[6]=10; }//Phrygien b4 
+	else if (Scale == 13)  {scale[0]=0;     scale[1]=2;     scale[2]=3;     scale[3]=6;     scale[4]=7;     scale[5]=9;     scale[6]=11; }//Minor Lydien 
+	//else if (Scale == 25)  {scale[0]=0;     scale[1]=1;     scale[2]=4;     scale[3]=5;     scale[4]=7;     scale[5]=9;     scale[6]=10; }//Mixolydien b2
+	//else if (Scale == 26)  {scale[0]=0;     scale[1]=3;     scale[2]=4;     scale[3]=6;     scale[4]=8;     scale[5]=9;     scale[6]=11; }//Augmented #2 Lydien 
+	//else                   {scale[0]=0;     scale[1]=1;     scale[2]=3;     scale[3]=5;     scale[4]=6;     scale[5]=8;     scale[6]=9; }//Diminished Locrien 
+    
+    
+
+	//options="Natural Major / Ionien;Dorien;Phrygien;Lydien;Mixolydien;Natural Minor / Eolien;Locrien;Harmonic Minor;Augmented Major;Major Phrygien;Melodic Minor;Bartok;Harmonic Major;Minor Lydien;"	
+	//options="Natural Major / Ionien;Dorien;Phrygien;Lydien;Mixolydien;Natural Minor / Eolien;Locrien;Harmonic Minor;Locrien Natural6;Augmented Major;Dorien #4;Major Phrygien;Lydien #2;Diminished Superlocrien;Melodic Minor;Dorien b2;Augmented Lydien;Bartok;Mixolydien b6;Locrien Natural2;Superlocrien;Harmonic Major;Dorien b5;Phrygien b4;Minor Lydien;Mixolydien b2;Augmented #2 Lydien; Diminished Locrien;"	
+	
+	
+    
+    if (FixedVelocity==true){vel=127;} 
+    octave=12+12*Transpose;
+
+    firstChord = true;
+    
+    drawLayout();
+
+
+    
+}
+
+void repaint()
+{
+   //clearDisplay();
+   //drawPressureMap();
+   //fadePressureMap();
+
+        
+}
+
+void touchStart (int index, float x, float y, float z, float vz)
+{
+
+    int pX= convertXPositionToPixel (x); 
+    int pY= convertXPositionToPixel (y);
+    
+    
+    found=false; int i=0; int j=0; int k=0;
+    while (found == false){
+    
+        
+        if (pX>=noteX[i] && pX<noteX[i]+wNote && pY>=noteY[i] && pY<noteY[i]+hNote){
+        found=true;
+        hitX=x;
+        hitY=y;
+        notePressed (i, index, vz);
+        }else{        if (i<nbNote-1) i++;        }
+        
+        if (pX>=buttonX[j] && pX<buttonX[j]+wButton && pY>=buttonY[j] && pY<buttonY[j]+hButton){
+        found=true;
+        buttonPressed (j, index);
+        }else{        if (j<nbButton-1) j++;        }
+        
+        if (pX>=rbuttonX[k] && pX<rbuttonX[k]+wrButton && pY>=rbuttonY[k] && pY<rbuttonY[k]+hrButton){
+        found=true;
+        rbuttonPressed (k, index);
+        }else{        if (k<nbrButton-1) k++;        }       
+       
+        
+    
+    }
+
+ 
+
+   
+}
+
+
+
+void touchEnd (int index, float x, float y, float z, float vz){
+    
+ 
+    if (pressIndexOn[index] == true){
+        
+        
+        if (pressIndexType[index]==1){
+        noteReleased (index, vz);
+            
+        }
+        
+        if (pressIndexType[index]==2){
+        buttonReleased (index);
+            
+        }
+        
+
+        if (pressIndexType[index]==3){
+        rbuttonReleased (index);
+            
+        }
+        
+        
+    }
+    
+ 
+    
+}
+
+void touchMove (int index, float x, float y, float z, float vz)
+{
+
+    
+    
+      if (pressIndexOn[index] == true){
+        
+
+      if (pressIndexType[index]==1){
+            
+            
+      if ((x<hitX)&&(degree!=0)){ //we go left
+        valX= int(map (hitX-x, 0.0, hitX -padLowX, 0.0, 127.0));
+        
+        
+        }  
+    
+        if ((x>hitX)&&(degree!=6)){ //we go right
+        valX= int(map (x-hitX, 0.0, padHighX -hitX, 0.0, 127.0));
+        
+        
+        }
+         
+        
+        
+        if (y<hitY){ //we go top
+        valY= int(map (hitY-y, 0.0, hitY -padLowY, 0.0, 127.0));
+        
+        
+        }  
+    
+        if ((y>hitY)&&(degree!=0)&&(degree!=2)&&(degree!=4)&&(degree!=6)){ //we go bottom
+        valY= int(map (y-hitY, 0.0, padHighY -hitY, 0.0, 127.0));
+        
+        
+        }
+            
+
+        if ((valX!=lastvalX)&&(blockX==false)){
+            
+            sendMessage(Xout,valX);
+            lastvalX=valX;
+            
+        }
+        
+        
+         if ((valY!=lastvalY)&&(blockY==false)){
+            
+            sendMessage(Yout,valY);
+            lastvalY=valY;
+            
+        }
+        
+        
+        valZ= int(map (z, 0.0, 1.0, 0.0, 127.0));
+        
+        
+        if ((valZ!=lastvalZ)&&(blockZ==false)){
+            sendMessage(Zout,valZ);
+            lastvalZ=valZ;
+            
+        }
+  
+            
+       }
+       }
+    
+    
+
+}
+
+
+void sendMessage(int type, int message){
+    
+    sendMessageChan(type, Midi_Channel1, message);
+
+            if (Midi_Channel2!=Midi_Channel1){
+    sendMessageChan(type, Midi_Channel2, message);
+            }
+            
+            if ((Midi_Channel3!=Midi_Channel1)&&(Midi_Channel3!=Midi_Channel2)){
+    sendMessageChan(type, Midi_Channel3, message);
+            }
+            if ((Midi_Channel4!=Midi_Channel1)&&(Midi_Channel4!=Midi_Channel2)&&(Midi_Channel4!=Midi_Channel3)){
+            sendMessageChan(type, Midi_Channel4, message);
+                
+            }
+    
+}
+
+void sendMessageChan(int type, int Channel, int message){
+ 
+            if (type==0){sendCC(Channel-1,1, message);}
+            if (type==1){sendChannelPressure(Channel-1, message);}
+            if (type==2){sendCC(Channel-1,CC1, message);}
+            if (type==3){sendCC(Channel-1,CC2, message);}
+            if (type==4){sendCC(Channel-1,CC3, message);}
+            
+}
+
+
+
+void handleButtonDown(int index){
+ 
+if (index ==0){
+}
+    
+}
+
+
+void handleButtonUp(int index){
+
+if (index ==0){
+}
+
+    
+}
+
+
+void notePressed (int i, int index, float vz){
+    
+    if (notePressed == false){
+
+    pressIndexOn[index]=true;pressIndexType[index]=1;pressIndexNumber[index]=i;
+    
+    
+    noteColor[i]=nColorPressed;
+
+    
+    drawNote(i);
+    notePressed = true;
+    degree=i;
+    
+    noteOn(vz);
+    
+    }
+
+}
+
+void noteReleased(int index, float vz){
+    int i = pressIndexNumber[index];
+
+    noteColor[i]=nColor;
+
+    
+    
+    drawNote(i);
+    pressIndexOn[index]=false;
+    notePressed = false;
+    
+    noteOff (i, vz);
+    
+}
+
+
+void noteOn(float vz){
+    
+    setNotes();
+    
+
+    
+   if (FixedVelocity==false){ vel= int(map(vz,0.0,1.0,0.0,127.0));}
+    
+    sendNoteOn(Midi_Channel1-1, note[0], vel);    sendNoteOn(Midi_Channel2-1, note[1], vel);    sendNoteOn(Midi_Channel3-1, note[2], vel);    sendNoteOn(Midi_Channel4-1, note[3], vel);
+    
+}
+
+void noteOff(int i, float vz){
+    
+   if (FixedVelocity==false){ vel= int(map(vz,0.0,1.0,0.0,127.0));}
+    
+    sendNoteOff(Midi_Channel1-1, note[0], vel);    sendNoteOff(Midi_Channel2-1, note[1], vel);    sendNoteOff(Midi_Channel3-1, note[2], vel);    sendNoteOff(Midi_Channel4-1, note[3], vel);
+    
+}
+
+
+void setNotes(){
+    
+    
+    
+    
+  note[0]=root + scale[degree]+Transpose*12;
+  note[1]=root + scale[mod(degree+2+mod2,7)]+ int ((degree+2+mod2)/7)*12+Transpose*12;
+  note[2]=root + scale[mod(degree+4+mod3,7)]+ int ((degree+4+mod3)/7)*12+Transpose*12;
+  
+  
+  if (mod4==0){
+      needFourth=true;}
+  else{
+      note[3]=root + scale[mod(degree+7+mod4,7)]+ int ((degree+7+mod4)/7)*12+Transpose*12;
+      needFourth=false;
+  }
+  
+
+  
+
+  
+  if (firstChord==true){
+      firstChord=false;
+      if (needFourth==true){addBasicFourth();}
+      setInversion(renv);
+      Pnote[0]=note[0]; Pnote[1]=note[1];Pnote[2]=note[2];Pnote[3]=note[3];
+      
+  }else{Process();}
+  
+  
+}
+
+
+void Process(){
+ 
+    
+   generateVoicing();  
+   log (bestScore);
+ 
+   note[0]= bestNote[0];note[1]= bestNote[1];note[2]= bestNote[2];note[3]= bestNote[3];
+   Pnote[0]=note[0]; Pnote[1]=note[1];Pnote[2]=note[2];Pnote[3]=note[3];
+   
+}
+
+
+void addBasicFourth(){
+    note[3]=note[0]+octave;
+       
+}
+
+
+
+
+void generateVoicing(){
+    
+
+    
+    bestScore=12;    bestGap=999;
+    
+
+    if (needFourth==true){
+
+  
+        if (renv==0){
+        
+        
+        //Option 1 - Double the root - Always
+            addBasicFourth(); generate();
+
+         
+         //Option 2 - Double the fifth when perfect
+
+         
+         if ((note[2]-note[0])==7){
+             note[3]=note[2]+octave;generate();
+
+         }
+         
+         //Option 3 - Double the third when minor
+    
+         if ((note[1]-note[0])==3){
+             note[3]=note[1]+octave; generate();
+
+            
+         }         
+         
+         
+       }
+       
+       if (renv==1){
+           
+            tr[0]=note[0];tr[1]=note[1];tr[2]=note[2];
+           
+            //Option 1 - Double the root - Always
+            addBasicFourth();
+            setInversion(renv);
+            generate();
+            
+            //Option 2 - Double the third = the bass when minor
+            
+            if ((note[1]-note[0])==3){
+            note[0]=tr[0];note[1]=tr[1];note[2]=tr[2];
+            note[3]=note[1]+octave;
+            setInversion(renv);
+            generate();
+            
+            }
+           
+             
+           
+       }
+        
+       
+       if (renv==2){
+            
+           
+            tr[0]=note[0];tr[1]=note[1];tr[2]=note[2];
+           
+            //Option 1A -  Double the bass=note[2] for second inversion of chord with perfect 5th - Always try to double the 5th in a second inversion
+
+             if ((note[2]-note[0])==7){
+                note[3]=note[2]+octave;
+                setInversion(renv);
+                generate();
+             }else{ //Option 1B - Double the third=note[1] if minor
+                            if ((note[1]-note[0])==3){
+                                note[3]=note[1]+octave;
+                                setInversion(renv);
+                                generate();
+                            }else{ //Option 1C - Double the root otherwhile
+                            
+                                        addBasicFourth();
+                                        setInversion(renv);
+                                        generate();
+                            
+                            
+                            }
+
+             
+             }
+             
+             
+            
+            
+            //Option 2 - Double the root also when perfect fifth
+            
+            
+            if ((note[2]-note[0])==7){
+                note[0]=tr[0];note[1]=tr[1];note[2]=tr[2];
+                addBasicFourth();
+                setInversion(renv);
+                generate();
+            
+            }
+       
+           
+           
+       }
+        
+        
+     
+        
+    }else{setInversion(renv);generate();}
+        
+    
+
+
+}
+
+void setInversion(int r){
+    
+    if (r==1){
+    
+        int temp=note[0];
+        note[0]=note[1];
+        note[1]=note[2];
+        note[2]=note[3];
+        note[3]=temp+octave;
+                
+    }
+    
+    
+     if (r==2){
+    
+        int temp1=note[0];
+        int temp2= note[3];
+        
+        note[0]=note[2];
+        note[2]=temp1+octave;
+        
+        note[3]=note[1]+octave;
+        note[1]=temp2;
+        
+                
+    }
+    
+    
+    
+}
+
+
+void generate(){
+   
+    
+         for (int n1=0; n1<3; n1++){
+            for (int n2=n1; n2<3; n2++){
+                for (int n3=n1; n3<3; n3++){    
+                    for (int n4=n1; n4<3; n4++){
+        
+        
+     
+                        
+                        t[0]=note[0]+12*(n1-1);
+                        t[1]=note[1]+12*(n2-1);
+                        t[2]=note[2]+12*(n3-1);
+                        t[3]=note[3]+12*(n4-1);
+                        
+
+        
+                        //All different
+                        if ((t[0]!=t[1])&&(t[0]!=t[2])&&(t[0]!=t[3])&&(t[1]!=t[2])&&(t[1]!=t[3])&&(t[2]!=t[3])){
+                           
+                        
+                            
+                      
+                        int maxi=(max(max(t[1],t[2]),t[3]));
+                        int mini=(min(min(t[1],t[2]),t[3]));
+                        int i=1; while ((t[i]==mini) || (t[i]==maxi)){i++;}
+                        int mid = t[i];
+                        
+                        
+
+                        //Less than 1 Octave between each Notes2,3,4
+                        
+                         if (((maxi-mid)<13)&&((mid-mini)<13)){
+                            
+                        
+                        
+                        
+                        //The root must be the lowest and not to close to the lowest chord Note and in same octave than the lowest chord Note
+                        if (((mini-t[0])>2)&&((mini-t[0])<13)){
+                        
+         
+                        t[1]=mini;
+                        t[2]=mid;
+                        t[3]=maxi;
+                   
+                        
+
+                        horizontalVoicing();
+        
+                        }
+                        }
+                        }
+        
+                    }
+
+            }
+          }  
+         }
+    
+}
+
+
+
+
+
+void horizontalVoicing (){
+    
+    
+    
+    if ((t[0]<Pnote[1])&&(t[1]<Pnote[2])&&(t[2]<Pnote[3])&&(t[1]>Pnote[0])&&(t[2]>Pnote[1])&&(t[3]>Pnote[2])){
+				overlap=false; //log(11111111);
+			
+			}else{				overlap=true;			}
+       
+			
+		g1=abs(t[1]-Pnote[1]);g2=abs(t[2]-Pnote[2]);g3=abs(t[3]-Pnote[3]);
+
+       
+       	if ( ((g1<=8)||(g1==12)) && ((g2<=8)||(g2==12)) && ((g3<=8)||(g3==12)) ){
+				leadOutLimit=false; //log(222);
+			}else{
+				leadOutLimit=true;
+			}
+			
+			
+		
+		parallel=false;
+		similar=false;
+	    for (int l=0;l<4;l++){
+				for (int m=0;m<4;m++){
+					if (m<l){
+					
+						if ((abs(t[l]-t[m])==7)||(abs(t[l]-t[m])==12)){//Perfect fifth or octave in current chord, now checking previous
+						
+							if (   (((t[l]-Pnote[l])>0)&&((t[m]-Pnote[m])>0))  ||  (((t[l]-Pnote[l])<0)&&((t[m]-Pnote[m])<0))   ){// Parallel or similar motion
+								
+							
+								if ((abs(Pnote[l]-Pnote[m])==7)||(abs(Pnote[l]-Pnote[m])==12)){//Perfect fifth or octave
+										parallel=true;// Parallel motion
+									//	log(333);
+								}else{
+										similar=true;//Similar motion
+									//	log(444);
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			
+       
+       
+    
+   
+   
+    
+   			if ((parallel==false)&&(similar==false)&&(leadOutLimit==false)&&(overlap==false)){// No issue for Horizontal Voicing
+				
+   			    currentScore=0;				
+				
+			}else
+			
+  			if ((parallel==false)&&(similar==false)&&(leadOutLimit==true)&&(overlap==false)){// Voice limiting NOK
+			
+  			    currentScore=1;
+
+				
+			}else
+			
+			if ((parallel==false)&&(similar==true)&&(leadOutLimit==false)&&(overlap==false)){// similar motion 5ths or octaves NOK
+			currentScore=2;
+
+			
+			}else
+			
+			if ((parallel==false)&&(similar==false)&&(leadOutLimit==false)&&(overlap==true)){// Voice overlap NOK
+				currentScore=3;
+
+			
+			}else
+			
+			 if ((parallel==false)&&(similar==true)&&(leadOutLimit==true)&&(overlap==false)){// Voice limiting NOK and similar motion 5ths or octaves NOK
+			    
+			     currentScore=4;
+
+			  
+			 }else
+			
+			if ((parallel==false)&&(similar==false)&&(leadOutLimit==true)&&(overlap==true)){// Voice limiting NOK and Voice overlap NOK
+				currentScore=5;
+
+			}else
+
+			if ((parallel==false)&&(similar==true)&&(leadOutLimit==false)&&(overlap==true)){// // Voice overlap NOK and similar motion 5ths or octaves NOK
+				currentScore=6;
+
+			}else
+			
+			if ((parallel==false)&&(similar==true)&&(leadOutLimit==true)&&(overlap==true)){// // Voice overlap NOK and similar motion 5ths or octaves NOK and Voice overlap NOK
+				currentScore=7;
+
+			}else
+			
+			if ((parallel==true)&&(leadOutLimit==false)&&(overlap==false)){// parallel 5ths or octaves NOK
+			currentScore=8;
+
+			}else
+    
+	        if ((parallel==true)&&(leadOutLimit==true)&&(overlap==false)){// parallel 5ths or octaves NOK and Voice limiting NOK
+				currentScore=9;
+
+			}else
+			
+			if ((parallel==true)&&(leadOutLimit==false)&&(overlap==true)){// parallel 5ths or octaves NOK and Voice overlap NOK
+				currentScore=10;
+
+			}else
+			
+		
+			if ((parallel==true)&&(leadOutLimit==true)&&(overlap==true)){// parallel 5ths or octaves NOK and Voice overlap NOK AND Voice limiting
+				currentScore=11;
+
+			}else{log(666);}
+
+ 
+    
+
+			
+  if (((currentScore==bestScore)&&((g1+g2+g3)<bestGap))   || (currentScore<bestScore)  ){
+       
+       
+       bestNote[0]=t[0];bestNote[1]=t[1];bestNote[2]=t[2];bestNote[3]=t[3];
+       bestScore=currentScore;
+       bestGap=g1+g2+g3;
+        
+
+   }
+   
+    
+}
+
+
+
+
+
+
+
+
+
+void buttonPressed (int j, int index){
+    
+    bool ok = false;
+    
+    if (  ((j==0)&&(buttonCol1Pressed == false))&&(button3Pressed == false)    ) {buttonCol1Pressed = true; button0Pressed= true; ok = true;}
+    if (  ((j==1)&&(buttonCol1Pressed == false))&&(button4Pressed == false)    ) {buttonCol1Pressed = true; button1Pressed= true; ok = true;}
+    
+    if (  (j==2)&&(buttonCol2Pressed == false)    ) {buttonCol2Pressed = true; ok = true;}
+    if (  ((j==3)&&(buttonCol2Pressed == false))&&(button0Pressed == false)    ) {buttonCol2Pressed = true; button3Pressed= true; ok = true;}
+    
+    if (  ((j==4)&&(buttonCol3Pressed == false))&&(button1Pressed == false)    ) {buttonCol3Pressed = true; button4Pressed=true; ok = true;}
+    if (  (j==5)&&(buttonCol3Pressed == false)    ) {buttonCol3Pressed = true; ok = true;}
+    
+    
+    if (ok == true){
+    pressIndexOn[index]=true;pressIndexType[index]=2;pressIndexNumber[index]=j;
+    
+     
+    
+    if (j == 0 || j== 3 || j==4) {
+        
+       buttonColor[j]=nButton1Pressed;
+
+       }
+         
+       if (j == 1 || j== 2 || j==5) {
+       buttonColor[j]=nButton2Pressed;
+
+       }
+    
+    
+    drawButton(j);
+    
+    setMod(j);
+    
+    }
+
+}
+
+void rbuttonPressed (int k, int index){
+    
+    bool ok = false;
+    
+    if (  ((k==0)&&(rbutton2Pressed == false))   ) {rbutton1Pressed = true;  ok = true;}
+    if (  ((k==1)&&(rbutton1Pressed == false))   ) {rbutton2Pressed = true;  ok = true;}
+    
+   
+    
+    if (ok == true){
+    pressIndexOn[index]=true;pressIndexType[index]=3;pressIndexNumber[index]=k;
+    
+     
+    
+        
+     rbuttonColor[k]=rButtonPressed;
+
+     
+    
+    
+    drawrButton(k);
+    
+    setrMod(k);
+    
+    }
+
+}
+
+
+
+
+
+void buttonReleased(int index){
+    
+    
+    
+    int j = pressIndexNumber[index];
+    
+        
+    
+    if (j == 0 || j== 3 || j==4) {
+        
+       buttonColor[j]=nButton1;
+
+       }
+         
+       if (j == 1 || j== 2 || j==5) {
+       buttonColor[j]=nButton2;
+
+       }
+    
+    drawButton(j);
+    
+    pressIndexOn[index]=false;
+    
+    if (  j==0  ) {button0Pressed=false; buttonCol1Pressed = false;}
+    if (  j==1  ) {button1Pressed=false; buttonCol1Pressed = false;}
+    
+    if (  j==2  ) {buttonCol2Pressed = false;}
+    if (  j==3  ) {button3Pressed=false; buttonCol2Pressed = false;}
+    
+    if (  j==4 ) {button4Pressed=false; buttonCol3Pressed = false;}
+    if (  j==5 ) {buttonCol3Pressed = false;}
+    
+    clearMod (j);
+
+}
+
+void rbuttonReleased(int index){
+    
+    
+    
+    int k = pressIndexNumber[index];
+    
+
+         
+    rbuttonColor[k]=rButton;
+
+    
+    drawrButton(k);
+    
+    pressIndexOn[index]=false;
+    
+    if (  k==0  ) {rbutton1Pressed=false; }
+    if (  k==1  ) {rbutton2Pressed=false; }
+    
+     
+    clearrMod (k);
+
+}
+
+
+
+void setMod(int j){
+ 
+    if (j==0){ mod2=1;   }
+    if (j==1){ mod2=-1;   }
+
+    if (j==2){ mod3=1;   }
+    if (j==3){ mod3=-1;   }
+    
+    
+    if (j==4){ mod4=1;   }
+    if (j==5){ mod4=-1;   }
+    
+        
+}
+
+
+void setrMod(int k){
+    
+    if (k==0){renv=1;}
+    if (k==1){renv=2;}
+    
+}
+
+
+
+void clearrMod(int k){
+    renv=0;
+    
+}
+
+
+void clearMod (int j){
+    
+    if (  j==0||j==1   ) {mod2=0;}
+    if (  j==2||j==3   ) {mod3=0;}
+    if (  j==4||j==5   ) {mod4=0;}   
+    
+}
+    
+
+
+
+void drawLayout()
+{
+
+    
+    clearDisplay();
+    for (int i=0; i<nbNote; i++){
+        drawNote(i);
+    }
+
+    
+     for (int j=0; j<nbButton; j++){
+            drawButton(j);
+       
+    }
+    
+    
+     for (int k=0; k<nbrButton; k++){
+            drawrButton(k);
+       
+    }
+    
+ 
+}
+
+void drawNote (int i){
+fillRect (noteColor[i], noteX[i], noteY[i], wNote, hNote);
+
+}
+
+void drawButton (int j){
+    fillRect (buttonColor[j], buttonX[j], buttonY[j], wButton, hButton);
+}
+
+
+void drawrButton (int k){
+    fillRect (rbuttonColor[k], rbuttonX[k], rbuttonY[k], wrButton, hrButton);
+}
+
+
+
+
+
+
+
+
+int convertXPositionToPixel (float x) 
+{ 
+
+    return int (map (x, padLowX, padHighX, 0.0, 14.0));
+
+    
+}
+
+
+int convertYPositionToPixel (float y) 
+{ 
+
+
+    return int (map (y, padLowY, padHighY, 0.0, 14.0));
+
+    
+}
+
+
+
+
+
+
+/*
+
+<display backgroundColour="0xFFFF6565" textColour ="0xFFFFFFFF">
+    <pixels>
+        <pixel index="0" colour="0xFF4A7696" />
+        <pixel index="1" colour="0xFF4A7696" />
+        <pixel index="2" colour="0xFF4A7696" />
+        <pixel index="4" colour="0xFF4A7696" />
+        <pixel index="5" colour="0xFF4A7696" />
+        <pixel index="6" colour="0xFF4A7696" />
+        <pixel index="8" colour="0xFF4A7696" />
+        <pixel index="9" colour="0xFF4A7696" />
+        <pixel index="10" colour="0xFF4A7696" />
+        <pixel index="12" colour="0xFF4A7696" />
+        <pixel index="13" colour="0xFF4A7696" />
+        <pixel index="14" colour="0xFF4A7696" />
+        <pixel index="15" colour="0xFF4A7696" />
+        <pixel index="16" colour="0xFF4A7696" />
+        <pixel index="17" colour="0xFF4A7696" />
+        <pixel index="19" colour="0xFF4A7696" />
+        <pixel index="20" colour="0xFF4A7696" />
+        <pixel index="21" colour="0xFF4A7696" />
+        <pixel index="23" colour="0xFF4A7696" />
+        <pixel index="24" colour="0xFF4A7696" />
+        <pixel index="25" colour="0xFF4A7696" />
+        <pixel index="27" colour="0xFF4A7696" />
+        <pixel index="28" colour="0xFF4A7696" />
+        <pixel index="29" colour="0xFF4A7696" />
+        <pixel index="30" colour="0xFF4A7696" />
+        <pixel index="31" colour="0xFF4A7696" />
+        <pixel index="32" colour="0xFF4A7696" />
+        <pixel index="34" colour="0xFF4A7696" />
+        <pixel index="35" colour="0xFF4A7696" />
+        <pixel index="36" colour="0xFF4A7696" />
+        <pixel index="38" colour="0xFF4A7696" />
+        <pixel index="39" colour="0xFF4A7696" />
+        <pixel index="40" colour="0xFF4A7696" />
+        <pixel index="42" colour="0xFF4A7696" />
+        <pixel index="43" colour="0xFF4A7696" />
+        <pixel index="44" colour="0xFF4A7696" />
+        <pixel index="47" colour="0xFF4A7696" />
+        <pixel index="48" colour="0xFF4A7696" />
+        <pixel index="49" colour="0xFF4A7696" />
+        <pixel index="51" colour="0xFF4A7696" />
+        <pixel index="52" colour="0xFF4A7696" />
+        <pixel index="53" colour="0xFF4A7696" />
+        <pixel index="55" colour="0xFF4A7696" />
+        <pixel index="56" colour="0xFF4A7696" />
+        <pixel index="57" colour="0xFF4A7696" />
+        <pixel index="62" colour="0xFF4A7696" />
+        <pixel index="63" colour="0xFF4A7696" />
+        <pixel index="64" colour="0xFF4A7696" />
+        <pixel index="66" colour="0xFF4A7696" />
+        <pixel index="67" colour="0xFF4A7696" />
+        <pixel index="68" colour="0xFF4A7696" />
+        <pixel index="70" colour="0xFF4A7696" />
+        <pixel index="71" colour="0xFF4A7696" />
+        <pixel index="72" colour="0xFF4A7696" />
+        <pixel index="77" colour="0xFF4A7696" />
+        <pixel index="78" colour="0xFF4A7696" />
+        <pixel index="79" colour="0xFF4A7696" />
+        <pixel index="81" colour="0xFF4A7696" />
+        <pixel index="82" colour="0xFF4A7696" />
+        <pixel index="83" colour="0xFF4A7696" />
+        <pixel index="85" colour="0xFF4A7696" />
+        <pixel index="86" colour="0xFF4A7696" />
+        <pixel index="87" colour="0xFF4A7696" />
+        <pixel index="90" colour="0xFF334653" />
+        <pixel index="91" colour="0xFF334653" />
+        <pixel index="92" colour="0xFF334653" />
+        <pixel index="93" colour="0xFF334653" />
+        <pixel index="94" colour="0xFF334653" />
+        <pixel index="95" colour="0xFF637C8F" />
+        <pixel index="96" colour="0xFF637C8F" />
+        <pixel index="97" colour="0xFF637C8F" />
+        <pixel index="98" colour="0xFF637C8F" />
+        <pixel index="99" colour="0xFF637C8F" />
+        <pixel index="100" colour="0xFF334653" />
+        <pixel index="101" colour="0xFF334653" />
+        <pixel index="102" colour="0xFF334653" />
+        <pixel index="103" colour="0xFF334653" />
+        <pixel index="104" colour="0xFF334653" />
+        <pixel index="105" colour="0xFF334653" />
+        <pixel index="106" colour="0xFF334653" />
+        <pixel index="107" colour="0xFF334653" />
+        <pixel index="108" colour="0xFF334653" />
+        <pixel index="109" colour="0xFF334653" />
+        <pixel index="110" colour="0xFF637C8F" />
+        <pixel index="111" colour="0xFF637C8F" />
+        <pixel index="112" colour="0xFF637C8F" />
+        <pixel index="113" colour="0xFF637C8F" />
+        <pixel index="114" colour="0xFF637C8F" />
+        <pixel index="115" colour="0xFF334653" />
+        <pixel index="116" colour="0xFF334653" />
+        <pixel index="117" colour="0xFF334653" />
+        <pixel index="118" colour="0xFF334653" />
+        <pixel index="119" colour="0xFF334653" />
+        <pixel index="120" colour="0xFF334653" />
+        <pixel index="121" colour="0xFF334653" />
+        <pixel index="122" colour="0xFF334653" />
+        <pixel index="123" colour="0xFF334653" />
+        <pixel index="124" colour="0xFF334653" />
+        <pixel index="125" colour="0xFF637C8F" />
+        <pixel index="126" colour="0xFF637C8F" />
+        <pixel index="127" colour="0xFF637C8F" />
+        <pixel index="128" colour="0xFF637C8F" />
+        <pixel index="129" colour="0xFF637C8F" />
+        <pixel index="130" colour="0xFF334653" />
+        <pixel index="131" colour="0xFF334653" />
+        <pixel index="132" colour="0xFF334653" />
+        <pixel index="133" colour="0xFF334653" />
+        <pixel index="134" colour="0xFF334653" />
+        <pixel index="135" colour="0xFF637C8F" />
+        <pixel index="136" colour="0xFF637C8F" />
+        <pixel index="137" colour="0xFF637C8F" />
+        <pixel index="138" colour="0xFF637C8F" />
+        <pixel index="139" colour="0xFF637C8F" />
+        <pixel index="140" colour="0xFF334653" />
+        <pixel index="141" colour="0xFF334653" />
+        <pixel index="142" colour="0xFF334653" />
+        <pixel index="143" colour="0xFF334653" />
+        <pixel index="144" colour="0xFF334653" />
+        <pixel index="145" colour="0xFF637C8F" />
+        <pixel index="146" colour="0xFF637C8F" />
+        <pixel index="147" colour="0xFF637C8F" />
+        <pixel index="148" colour="0xFF637C8F" />
+        <pixel index="149" colour="0xFF637C8F" />
+        <pixel index="150" colour="0xFF637C8F" />
+        <pixel index="151" colour="0xFF637C8F" />
+        <pixel index="152" colour="0xFF637C8F" />
+        <pixel index="153" colour="0xFF637C8F" />
+        <pixel index="154" colour="0xFF637C8F" />
+        <pixel index="155" colour="0xFF334653" />
+        <pixel index="156" colour="0xFF334653" />
+        <pixel index="157" colour="0xFF334653" />
+        <pixel index="158" colour="0xFF334653" />
+        <pixel index="159" colour="0xFF334653" />
+        <pixel index="160" colour="0xFF637C8F" />
+        <pixel index="161" colour="0xFF637C8F" />
+        <pixel index="162" colour="0xFF637C8F" />
+        <pixel index="163" colour="0xFF637C8F" />
+        <pixel index="164" colour="0xFF637C8F" />
+        <pixel index="165" colour="0xFF637C8F" />
+        <pixel index="166" colour="0xFF637C8F" />
+        <pixel index="167" colour="0xFF637C8F" />
+        <pixel index="168" colour="0xFF637C8F" />
+        <pixel index="169" colour="0xFF637C8F" />
+        <pixel index="170" colour="0xFF334653" />
+        <pixel index="171" colour="0xFF334653" />
+        <pixel index="172" colour="0xFF334653" />
+        <pixel index="173" colour="0xFF334653" />
+        <pixel index="174" colour="0xFF334653" />
+        <pixel index="175" colour="0xFF637C8F" />
+        <pixel index="176" colour="0xFF637C8F" />
+        <pixel index="177" colour="0xFF637C8F" />
+        <pixel index="178" colour="0xFF637C8F" />
+        <pixel index="179" colour="0xFF637C8F" />
+        <pixel index="180" colour="0xFF526EA8" />
+        <pixel index="181" colour="0xFF526EA8" />
+        <pixel index="182" colour="0xFF526EA8" />
+        <pixel index="183" colour="0xFF526EA8" />
+        <pixel index="184" colour="0xFF526EA8" />
+        <pixel index="185" colour="0xFF526EA8" />
+        <pixel index="186" colour="0xFF526EA8" />
+        <pixel index="188" colour="0xFF526EA8" />
+        <pixel index="189" colour="0xFF526EA8" />
+        <pixel index="190" colour="0xFF526EA8" />
+        <pixel index="191" colour="0xFF526EA8" />
+        <pixel index="192" colour="0xFF526EA8" />
+        <pixel index="193" colour="0xFF526EA8" />
+        <pixel index="194" colour="0xFF526EA8" />
+        <pixel index="195" colour="0xFF526EA8" />
+        <pixel index="196" colour="0xFF526EA8" />
+        <pixel index="197" colour="0xFF526EA8" />
+        <pixel index="198" colour="0xFF526EA8" />
+        <pixel index="199" colour="0xFF526EA8" />
+        <pixel index="200" colour="0xFF526EA8" />
+        <pixel index="201" colour="0xFF526EA8" />
+        <pixel index="203" colour="0xFF526EA8" />
+        <pixel index="204" colour="0xFF526EA8" />
+        <pixel index="205" colour="0xFF526EA8" />
+        <pixel index="206" colour="0xFF526EA8" />
+        <pixel index="207" colour="0xFF526EA8" />
+        <pixel index="208" colour="0xFF526EA8" />
+        <pixel index="209" colour="0xFF526EA8" />
+        <pixel index="210" colour="0xFF526EA8" />
+        <pixel index="211" colour="0xFF526EA8" />
+        <pixel index="212" colour="0xFF526EA8" />
+        <pixel index="213" colour="0xFF526EA8" />
+        <pixel index="214" colour="0xFF526EA8" />
+        <pixel index="215" colour="0xFF526EA8" />
+        <pixel index="216" colour="0xFF526EA8" />
+        <pixel index="218" colour="0xFF526EA8" />
+        <pixel index="219" colour="0xFF526EA8" />
+        <pixel index="220" colour="0xFF526EA8" />
+        <pixel index="221" colour="0xFF526EA8" />
+        <pixel index="222" colour="0xFF526EA8" />
+        <pixel index="223" colour="0xFF526EA8" />
+        <pixel index="224" colour="0xFF526EA8" />
+    </pixels>
+</display>
+
+*/
